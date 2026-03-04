@@ -881,6 +881,97 @@
   .month-btn:hover { color: var(--text); border-color: var(--accent); }
   .month-btn.active { color: var(--bg); background: var(--accent); border-color: var(--accent); }
 
+  /* ── US/CANADA TRACKER ── */
+  .usca-summary {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .usca-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.9rem 1.4rem;
+    text-align: center;
+    min-width: 120px;
+  }
+
+  .usca-stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    line-height: 1;
+    color: var(--accent);
+  }
+
+  .usca-stat-label {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 0.2rem;
+  }
+
+  .usca-toggle {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.2rem;
+    flex-wrap: wrap;
+  }
+
+  .usca-legend {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .usca-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.5rem;
+  }
+
+  .usca-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.85rem;
+    border-radius: 6px;
+    border: 1px solid;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 0.88rem;
+    transition: transform 0.15s;
+    cursor: default;
+  }
+
+  .usca-chip:hover { transform: translateY(-1px); }
+
+  .usca-chip-name { flex: 1; }
+
+  .usca-chip-badge {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    margin-left: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .usca-chip-tag {
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-left: 0.4rem;
+    flex-shrink: 0;
+  }
+
+  .usca-hit-2plus { border-color: var(--gold); color: var(--gold); background: rgba(255,215,0,0.08); }
+  .usca-hit-1 { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.06); }
+  .usca-miss { border-color: var(--border); color: #555; background: transparent; }
+
   /* ── FOOTER ── */
   footer {
     text-align: center;
@@ -946,6 +1037,7 @@
     <button class="nav-btn" onclick="showSection('games')">🎮 Game Log</button>
     <button class="nav-btn" onclick="showSection('perfect')">⭐ Perfect Rounds</button>
     <button class="nav-btn" onclick="showSection('locations')">🌍 Locations</button>
+    <button class="nav-btn" onclick="showSection('uscanada')">🇺🇸 US / Canada</button>
   </div>
 </nav>
 
@@ -1377,6 +1469,52 @@ function buildLocations() {
   }).join('');
 }
 
+// ── US/CANADA TRACKER ──────────────────────────────────────────────
+
+let uscaFilter = 'all';
+
+function buildUSCA(filter) {
+  const data = US_CANADA_REGIONS.filter(r => {
+    if (filter === 'us') return r.type === 'us';
+    if (filter === 'ca') return r.type === 'ca';
+    return true;
+  });
+
+  // Summary stats
+  const all = US_CANADA_REGIONS;
+  const hit   = all.filter(r => r.count > 0).length;
+  const multi = all.filter(r => r.count > 1).length;
+  const usHit = all.filter(r => r.type === 'us' && r.count > 0).length;
+  const caHit = all.filter(r => r.type === 'ca' && r.count > 0).length;
+  const total = all.reduce((s, r) => s + r.count, 0);
+  const usTotal = all.filter(r => r.type === 'us').length;
+  const caTotal = all.filter(r => r.type === 'ca').length;
+
+  document.getElementById('usca-summary').innerHTML = `
+    <div class="usca-stat"><div class="usca-stat-num">${hit}/${all.length}</div><div class="usca-stat-label">Regions Hit</div></div>
+    <div class="usca-stat"><div class="usca-stat-num">${total}</div><div class="usca-stat-label">Total Appearances</div></div>
+    <div class="usca-stat"><div class="usca-stat-num">${multi}</div><div class="usca-stat-label">Multiple Times</div></div>
+    <div class="usca-stat"><div class="usca-stat-num">${usHit}/${usTotal}</div><div class="usca-stat-label">US States</div></div>
+    <div class="usca-stat"><div class="usca-stat-num">${caHit}/${caTotal}</div><div class="usca-stat-label">CA Provinces/Terr.</div></div>
+  `;
+
+  const sorted = [...data].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  const grid = document.getElementById('usca-grid');
+  grid.innerHTML = sorted.map(r => {
+    const cls = r.count >= 2 ? 'usca-hit-2plus' : r.count === 1 ? 'usca-hit-1' : 'usca-miss';
+    const badge = r.count > 0 ? `<span class="usca-chip-badge">${r.count}×</span>` : '';
+    const tag = r.type === 'us' ? 'US' : 'CA';
+    return `<div class="usca-chip ${cls}"><span class="usca-chip-name">${r.name}</span><span class="usca-chip-tag">${tag}</span>${badge}</div>`;
+  }).join('');
+}
+
+function filterUSCA(f, btn) {
+  document.querySelectorAll('.usca-toggle .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  buildUSCA(f);
+}
+
+
 // ─────────────────────────────────────────────
 // NAVIGATION
 // ─────────────────────────────────────────────
@@ -1420,6 +1558,7 @@ buildScoreList('low-scores-list',  LOW_SCORES,  false);
 buildGameGrid('all');
 buildPerfect();
 buildLocations();
+buildUSCA('all');
 </script>
 </body>
 </html>
